@@ -10,6 +10,7 @@ pub struct App {
   window: Option<Arc<Window>>,
 }
 
+#[wasm_bindgen]
 impl App {
   fn event_handler(event: Event<()>, control_flow: &EventLoopWindowTarget<()>, window: Arc<Window>) {
     match event {
@@ -24,6 +25,7 @@ impl App {
     }
   }
 
+  #[wasm_bindgen(constructor)]
   pub async fn new() -> Self {
     log::info!("[app] creating window");
 
@@ -51,9 +53,17 @@ impl App {
       window: Some(window.clone()),
     };
 
-    event_loop.run(move |event, control_flow| {
-      Self::event_handler(event, control_flow, window.clone());
-    }).expect("[app] failed to run event loop");
+    #[cfg(not(target_arch = "wasm32"))] {
+      event_loop.run(move |event, control_flow| {
+        Self::event_handler(event, control_flow, window.clone());
+      }).expect("[app] failed to run event loop");
+    }
+    #[cfg(target_arch = "wasm32")] {
+      use winit::platform::web::EventLoopExtWebSys;
+      event_loop.spawn(move |event, control_flow| {
+        Self::event_handler(event, control_flow, window.clone());
+      });
+    }
 
     app
   }
