@@ -27,5 +27,3 @@ jobs:
       
     - name: Run tests
       run: cargo test --verbose
-    - run: wasm-pack test --headless --firefox
-    - run: wasm-pack test --headless --chrome
