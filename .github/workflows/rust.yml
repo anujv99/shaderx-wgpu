@@ -1,0 +1,31 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build native
+      run: cargo build --verbose
+      
+    - name: Install wasm-pack
+      run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      
+    - name: Build wasm
+      run: wasm-pack build --target webl
+      
+    - name: Run tests
+      run: cargo test --verbose
+    - run: wasm-pack test --headless --firefox
+    - run: wasm-pack test --headless --chrome
