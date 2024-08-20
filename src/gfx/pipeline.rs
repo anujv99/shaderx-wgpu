@@ -5,7 +5,7 @@ pub struct Pipeline {
 }
 
 impl Pipeline {
-  pub fn new(device: &wgpu::Device, shader_source: &str) -> Self {
+  pub fn new(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration, shader_source: &str) -> Self {
     let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
       label: Some("Shader"),
       source: wgpu::ShaderSource::Wgsl(shader_source.into()),
@@ -30,7 +30,7 @@ impl Pipeline {
         module: &shader,
         entry_point: "fs_main",
         targets: &[Some(wgpu::ColorTargetState {
-          format: wgpu::TextureFormat::Bgra8UnormSrgb,
+          format: config.format,
           blend: Some(wgpu::BlendState::REPLACE),
           write_mask: wgpu::ColorWrites::ALL,
         })],

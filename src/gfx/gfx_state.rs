@@ -72,7 +72,7 @@ impl GfxState {
       view_formats: vec![],
     };
 
-    let pipeline = Pipeline::new(&device, include_str!("temp.wgsl"));
+    let pipeline = Pipeline::new(&device, &config, include_str!("temp.wgsl"));
 
     Self {
       device,
