@@ -1,24 +1,42 @@
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use wasm_bindgen::prelude::*;
 use winit::{event::{Event, WindowEvent}, event_loop::{EventLoop, EventLoopWindowTarget}, window::{Window, WindowBuilder}};
 
-#[derive(Debug, Default)]
+#[path = "./gfx.rs"] mod gfx;
+use gfx::GfxState;
+
+#[derive(Debug)]
 #[wasm_bindgen]
 pub struct App {
   window: Option<Arc<Window>>,
+  gfx: Arc<Mutex<GfxState>>,
 }
 
 #[wasm_bindgen]
 impl App {
-  fn event_handler(event: Event<()>, control_flow: &EventLoopWindowTarget<()>, window: Arc<Window>) {
+  fn event_handler(event: Event<()>, control_flow: &EventLoopWindowTarget<()>, window: Arc<Window>, gfx: Arc<Mutex<GfxState>>) {
     match event {
       Event::Resumed => {
         log::debug!("[app] event: resumed");
       },
       Event::WindowEvent { ref event, window_id } if window_id == window.id() => match event {
         WindowEvent::CloseRequested => control_flow.exit(),
+        WindowEvent::Resized(physical_size) => {
+          log::debug!("[app] event: resized {:?}", physical_size);
+          let mut gfx = gfx.lock().expect("[app] failed to lock gfx");
+          gfx.resize(*physical_size);
+        },
+        WindowEvent::RedrawRequested => {
+          let mut gfx = gfx.lock().expect("[app] failed to lock gfx");
+          window.request_redraw();
+
+          match gfx.render() {
+            Ok(_) => (),
+            Err(e) => log::error!("[app] failed to render: {:?}", e),
+          }
+        },
         _ => (),
       },
       _ => (),
@@ -49,19 +67,22 @@ impl App {
         .expect("[app] failed to append canvas");
     }
 
+    let gfx = Arc::new(Mutex::new(GfxState::new(window.clone()).await));
+
     let app = Self {
       window: Some(window.clone()),
+      gfx: gfx.clone(),
     };
 
     #[cfg(not(target_arch = "wasm32"))] {
       event_loop.run(move |event, control_flow| {
-        Self::event_handler(event, control_flow, window.clone());
+        Self::event_handler(event, control_flow, window.clone(), gfx.clone());
       }).expect("[app] failed to run event loop");
     }
     #[cfg(target_arch = "wasm32")] {
       use winit::platform::web::EventLoopExtWebSys;
       event_loop.spawn(move |event, control_flow| {
-        Self::event_handler(event, control_flow, window.clone());
+        Self::event_handler(event, control_flow, window.clone(), gfx.clone());
       });
     }
 
