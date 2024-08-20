@@ -1,6 +1,8 @@
 use std::sync::Arc;
 use winit::window::Window;
 
+use super::pipeline::Pipeline;
+
 
 #[derive(Debug)]
 pub struct GfxState {
@@ -13,6 +15,7 @@ pub struct GfxState {
   limits: wgpu::Limits,
 
   surface_configured: bool,
+  pipeline: Pipeline,
 }
 
 impl GfxState {
@@ -69,6 +72,8 @@ impl GfxState {
       view_formats: vec![],
     };
 
+    let pipeline = Pipeline::new(&device, include_str!("temp.wgsl"));
+
     Self {
       device,
       queue,
@@ -78,6 +83,7 @@ impl GfxState {
       window,
       limits,
       surface_configured: false,
+      pipeline,
     }
   }
 
@@ -93,7 +99,7 @@ impl GfxState {
     });
 
     {
-      let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+      let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
         label: Some("render pass"),
         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
           view: &view,
@@ -107,6 +113,9 @@ impl GfxState {
         occlusion_query_set: None,
         timestamp_writes: None,
       });
+
+      render_pass.set_pipeline(&self.pipeline.pipeline);
+      render_pass.draw(0..3, 0..1);
     }
 
     self.queue.submit(std::iter::once(encoder.finish()));

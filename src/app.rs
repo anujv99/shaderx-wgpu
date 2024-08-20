@@ -4,9 +4,8 @@ use std::sync::{Arc, Mutex};
 use wasm_bindgen::prelude::*;
 use winit::{event::{Event, WindowEvent}, event_loop::{EventLoop, EventLoopWindowTarget}, window::{Window, WindowBuilder}};
 
-#[path = "./gfx.rs"] mod gfx;
 #[path = "./types.rs"] mod types;
-use gfx::GfxState;
+use crate::gfx::gfx_state::GfxState;
 
 #[derive(Debug)]
 #[wasm_bindgen]

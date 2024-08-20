@@ -2,6 +2,7 @@
 use wasm_bindgen::prelude::wasm_bindgen;
 
 mod app;
+mod gfx;
 
 #[wasm_bindgen(start)]
 pub async fn init() {
