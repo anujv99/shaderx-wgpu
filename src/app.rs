@@ -5,6 +5,7 @@ use wasm_bindgen::prelude::*;
 use winit::{event::{Event, WindowEvent}, event_loop::{EventLoop, EventLoopWindowTarget}, window::{Window, WindowBuilder}};
 
 #[path = "./gfx.rs"] mod gfx;
+#[path = "./types.rs"] mod types;
 use gfx::GfxState;
 
 #[derive(Debug)]
@@ -43,20 +44,53 @@ impl App {
     }
   }
 
-  #[wasm_bindgen(constructor)]
+  #[cfg(not(target_arch = "wasm32"))]
   pub async fn new() -> Self {
     log::info!("[app] creating window");
 
     let event_loop = EventLoop::new().expect("[app] failed to create event loop");
     let window = Arc::new(WindowBuilder::new().build(&event_loop).expect("[app] failed to create window"));
 
+    let gfx = Arc::new(Mutex::new(GfxState::new(window.clone()).await));
+
+    let app = Self {
+      window: Some(window.clone()),
+      gfx: gfx.clone(),
+    };
+
+    event_loop.run(move |event, control_flow| {
+      Self::event_handler(event, control_flow, window.clone(), gfx.clone());
+    }).expect("[app] failed to run event loop");
+
+    app
+  }
+
+  #[cfg(target_arch = "wasm32")]
+  #[wasm_bindgen(constructor)]
+  pub async fn new(ts_params: types::IAppParams) -> Self {
+    log::info!("[app] creating window");
+
+    let event_loop = EventLoop::new().expect("[app] failed to create event loop");
+    let window = Arc::new(WindowBuilder::new().build(&event_loop).expect("[app] failed to create window"));
+
+    use winit::platform::web::EventLoopExtWebSys;
+    use winit::platform::web::WindowExtWebSys;
+
     // create canvas on wasm
-    #[cfg(target_arch = "wasm32")] {
-      use winit::platform::web::WindowExtWebSys;
+    {
+      let params: JsValue = ts_params.into();
+      let mut container_id = String::from("canvas-container");
+
+      if params.is_object() {
+        if js_sys::Reflect::has(&params, &JsValue::from_str("containerId")).unwrap() {
+          container_id = js_sys::Reflect::get(&params, &JsValue::from_str("containerId")).unwrap().as_string().unwrap();
+        }
+      }
+
       web_sys::window()
         .and_then(|win| win.document())
         .and_then(|doc| {
-          let dst = doc.get_element_by_id("wasm-canvas").expect("[app] failed to get canvas container");
+          let dst = doc.get_element_by_id(&container_id).expect("[app] failed to get canvas container");
           let canvas = web_sys::Element::from(window.clone().canvas()?);
           canvas.set_attribute("width", "100%").ok()?;
           canvas.set_attribute("height", "100%").ok()?;
@@ -74,17 +108,9 @@ impl App {
       gfx: gfx.clone(),
     };
 
-    #[cfg(not(target_arch = "wasm32"))] {
-      event_loop.run(move |event, control_flow| {
-        Self::event_handler(event, control_flow, window.clone(), gfx.clone());
-      }).expect("[app] failed to run event loop");
-    }
-    #[cfg(target_arch = "wasm32")] {
-      use winit::platform::web::EventLoopExtWebSys;
-      event_loop.spawn(move |event, control_flow| {
-        Self::event_handler(event, control_flow, window.clone(), gfx.clone());
-      });
-    }
+    event_loop.spawn(move |event, control_flow| {
+      Self::event_handler(event, control_flow, window.clone(), gfx.clone());
+    });
 
     app
   }

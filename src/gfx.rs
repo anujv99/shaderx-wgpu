@@ -35,17 +35,22 @@ impl GfxState {
       force_fallback_adapter: false,
     }).await.expect("[gfx] failed to create adapter");
 
+    let limits = {
+      #[cfg(not(target_arch = "wasm32"))] {
+        wgpu::Limits::default()
+      }
+      #[cfg(target_arch = "wasm32")] {
+        wgpu::Limits::downlevel_webgl2_defaults()
+      }
+    };
+
     let (device, queue) = adapter.request_device(&wgpu::DeviceDescriptor {
       label: None,
       required_features: wgpu::Features::empty(),
-      #[cfg(not(target_arch = "wasm32"))]
-        required_limits: wgpu::Limits::default(),
-      #[cfg(target_arch = "wasm32")]
-        required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+      required_limits: limits.clone(),
       memory_hints: Default::default(),
     }, None).await.expect("[gfx] failed to create device");
 
-    let limits = adapter.limits();
     let surface_caps = surface.get_capabilities(&adapter);
     let surface_format = surface_caps.formats
       .iter()

@@ -14,3 +14,18 @@ pub async fn init() {
     }
   }
 }
+
+#[wasm_bindgen(js_name = getMaxDimension2D)]
+pub fn get_max_dimension_2d() -> u32 {
+  let limits = {
+    #[cfg(not(target_arch = "wasm32"))] {
+      wgpu::Limits::default()
+    }
+    #[cfg(target_arch = "wasm32")] {
+      wgpu::Limits::downlevel_webgl2_defaults()
+    }
+  };
+
+  limits.max_texture_dimension_2d
+}
+
