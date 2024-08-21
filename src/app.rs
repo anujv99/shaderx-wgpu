@@ -64,6 +64,7 @@ impl App {
     app
   }
 
+  // FIXME: remove async constructor
   #[cfg(target_arch = "wasm32")]
   #[wasm_bindgen(constructor)]
   pub async fn new(ts_params: types::IAppParams) -> Self {
@@ -112,5 +113,11 @@ impl App {
     });
 
     app
+  }
+
+  #[wasm_bindgen(js_name = "updateShader")]
+  pub fn update_shader(&self, shader_source: String) {
+    let mut gfx = self.gfx.lock().expect("[app] failed to lock gfx");
+    gfx.update_shader(&shader_source);
   }
 }

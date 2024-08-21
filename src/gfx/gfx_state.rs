@@ -138,7 +138,11 @@ impl GfxState {
     }
   }
 
-  pub fn get_window(&self) -> Arc<Window> {
-    self.window.clone()
+  pub fn update_shader(&mut self, shader_source: &str) {
+    self.pipeline = Pipeline::new(&PipelineCreateDesc {
+      device: &self.device,
+      config: &self.config,
+      shader_source,
+    });
   }
 }
