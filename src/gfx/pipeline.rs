@@ -4,8 +4,19 @@ pub struct Pipeline {
   pub pipeline: wgpu::RenderPipeline,
 }
 
+#[derive(Debug)]
+pub struct PipelineCreateDesc<'a> {
+  pub device: &'a wgpu::Device,
+  pub config: &'a wgpu::SurfaceConfiguration,
+  pub shader_source: &'a str,
+}
+
 impl Pipeline {
-  pub fn new(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration, shader_source: &str) -> Self {
+  pub fn new(create_desc: &PipelineCreateDesc) -> Self {
+    let device = create_desc.device;
+    let config = create_desc.config;
+    let shader_source = create_desc.shader_source;
+
     let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
       label: Some("Shader"),
       source: wgpu::ShaderSource::Wgsl(shader_source.into()),

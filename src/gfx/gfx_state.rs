@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use winit::window::Window;
 
-use super::pipeline::Pipeline;
+use super::pipeline::{Pipeline, PipelineCreateDesc};
 
 
 #[derive(Debug)]
@@ -72,7 +72,11 @@ impl GfxState {
       view_formats: vec![],
     };
 
-    let pipeline = Pipeline::new(&device, &config, include_str!("temp.wgsl"));
+    let pipeline = Pipeline::new(&PipelineCreateDesc {
+      device: &device,
+      config: &config,
+      shader_source: include_str!("temp.wgsl"),
+    });
 
     Self {
       device,
