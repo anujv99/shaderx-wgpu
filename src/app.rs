@@ -10,7 +10,7 @@ use crate::gfx::gfx_state::GfxState;
 #[derive(Debug)]
 #[wasm_bindgen]
 pub struct App {
-  window: Option<Arc<Window>>,
+  window: Arc<Window>,
   gfx: Arc<Mutex<GfxState>>,
 }
 
@@ -53,7 +53,7 @@ impl App {
     let gfx = Arc::new(Mutex::new(GfxState::new(window.clone()).await));
 
     let app = Self {
-      window: Some(window.clone()),
+      window: window.clone(),
       gfx: gfx.clone(),
     };
 
@@ -103,7 +103,7 @@ impl App {
     let gfx = Arc::new(Mutex::new(GfxState::new(window.clone()).await));
 
     let app = Self {
-      window: Some(window.clone()),
+      window: window.clone(),
       gfx: gfx.clone(),
     };
 
