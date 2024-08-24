@@ -120,4 +120,11 @@ impl App {
     let mut gfx = self.gfx.lock().expect("[app] failed to lock gfx");
     gfx.update_shader(&shader_source);
   }
+
+  #[wasm_bindgen(js_name = "compileShader")]
+  pub async fn compile_shader(&self, shader_source: String) -> types::ShaderCompilationInfo {
+    let gfx = self.gfx.lock().expect("[app] failed to lock gfx");
+    let result = gfx.compile_shader(&shader_source).await;
+    result.into()
+  }
 }

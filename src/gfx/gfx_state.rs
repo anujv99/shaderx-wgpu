@@ -54,6 +54,10 @@ impl GfxState {
       memory_hints: Default::default(),
     }, None).await.expect("[gfx] failed to create device");
 
+    device.on_uncaptured_error(Box::new(move |err| {
+      log::error!("[gfx] uncaptured error: {:?}", err);
+    }));
+
     let surface_caps = surface.get_capabilities(&adapter);
     let surface_format = surface_caps.formats
       .iter()
@@ -144,5 +148,17 @@ impl GfxState {
       config: &self.config,
       shader_source,
     });
+  }
+
+  pub async fn compile_shader(&self, shader_source: &str) -> wgpu::CompilationInfo {
+    let shader_module = self.device.create_shader_module(wgpu::ShaderModuleDescriptor {
+      label: Some("temp shader"),
+      source: wgpu::ShaderSource::Wgsl(shader_source.into()),
+    });
+
+    let result = shader_module.get_compilation_info().await;
+    log::info!("{:?}", result);
+
+    result
   }
 }
