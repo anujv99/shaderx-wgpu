@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use wasm_bindgen::prelude::*;
 use winit::{event::{Event, WindowEvent}, event_loop::{EventLoop, EventLoopWindowTarget}, window::{Window, WindowBuilder}};
 
-#[path = "./types.rs"] mod types;
+#[path = "./types.rs"] pub mod types;
 use crate::gfx::gfx_state::GfxState;
 
 #[derive(Debug)]
@@ -64,9 +64,7 @@ impl App {
     app
   }
 
-  // FIXME: remove async constructor
   #[cfg(target_arch = "wasm32")]
-  #[wasm_bindgen(constructor)]
   pub async fn new(ts_params: types::IAppParams) -> Self {
     log::info!("[app] creating window");
 

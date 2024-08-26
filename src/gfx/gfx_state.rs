@@ -15,7 +15,7 @@ pub struct GfxState {
   limits: wgpu::Limits,
 
   surface_configured: bool,
-  pipeline: Pipeline,
+  pipeline: Option<Pipeline>,
 }
 
 impl GfxState {
@@ -76,12 +76,6 @@ impl GfxState {
       view_formats: vec![],
     };
 
-    let pipeline = Pipeline::new(&PipelineCreateDesc {
-      device: &device,
-      config: &config,
-      shader_source: include_str!("temp.wgsl"),
-    });
-
     Self {
       device,
       queue,
@@ -91,7 +85,7 @@ impl GfxState {
       window,
       limits,
       surface_configured: false,
-      pipeline,
+      pipeline: None,
     }
   }
 
@@ -122,8 +116,11 @@ impl GfxState {
         timestamp_writes: None,
       });
 
-      render_pass.set_pipeline(&self.pipeline.pipeline);
-      render_pass.draw(0..3, 0..1);
+      if self.pipeline.is_some() {
+        let pipeline = self.pipeline.as_ref().unwrap();
+        render_pass.set_pipeline(&pipeline.pipeline);
+        render_pass.draw(0..3, 0..1);
+      }
     }
 
     self.queue.submit(std::iter::once(encoder.finish()));
@@ -143,11 +140,11 @@ impl GfxState {
   }
 
   pub fn update_shader(&mut self, shader_source: &str) {
-    self.pipeline = Pipeline::new(&PipelineCreateDesc {
+    self.pipeline = Some(Pipeline::new(&PipelineCreateDesc {
       device: &self.device,
       config: &self.config,
       shader_source,
-    });
+    }));
   }
 
   pub async fn compile_shader(&self, shader_source: &str) -> wgpu::CompilationInfo {
