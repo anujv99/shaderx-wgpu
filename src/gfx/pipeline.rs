@@ -9,6 +9,7 @@ pub struct PipelineCreateDesc<'a> {
   pub device: &'a wgpu::Device,
   pub config: &'a wgpu::SurfaceConfiguration,
   pub shader_source: &'a str,
+  pub bind_group_layouts: &'a [&'a wgpu::BindGroupLayout],
 }
 
 impl Pipeline {
@@ -24,7 +25,7 @@ impl Pipeline {
 
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
       label: Some("Pipeline Layout"),
-      bind_group_layouts: &[],
+      bind_group_layouts: create_desc.bind_group_layouts,
       push_constant_ranges: &[],
     });
 

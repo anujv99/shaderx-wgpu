@@ -1,8 +1,19 @@
 use std::sync::Arc;
+use wgpu::util::RenderEncoder;
 use winit::window::Window;
 
-use super::pipeline::{Pipeline, PipelineCreateDesc};
+use super::{pipeline::{Pipeline, PipelineCreateDesc}, uniform_buffer::{UniformBuffer, UniformBufferCreateDesc}};
+use bytemuck::{Pod, Zeroable};
+use web_time::{SystemTime, UNIX_EPOCH, Duration};
 
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
+pub struct CommonUniformBuffer {
+  pub time: f32,
+  pub delta_time: f32,
+  // padding
+  pub padding: [f32; 2],
+}
 
 #[derive(Debug)]
 pub struct GfxState {
@@ -16,6 +27,10 @@ pub struct GfxState {
 
   surface_configured: bool,
   pipeline: Option<Pipeline>,
+
+  last_frame_time: Duration,
+  common_buffer_data: CommonUniformBuffer,
+  common_buffer: UniformBuffer,
 }
 
 impl GfxState {
@@ -76,6 +91,20 @@ impl GfxState {
       view_formats: vec![],
     };
 
+    let current_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+
+    let common_buffer_data = CommonUniformBuffer {
+      time: 0.0,
+      delta_time: 0.0,
+      padding: [0.0; 2],
+    };
+
+    let common_buffer = UniformBuffer::new(&UniformBufferCreateDesc {
+      device: &device,
+      binding: 0,
+      data: &common_buffer_data,
+    });
+
     Self {
       device,
       queue,
@@ -86,6 +115,9 @@ impl GfxState {
       limits,
       surface_configured: false,
       pipeline: None,
+      common_buffer,
+      common_buffer_data,
+      last_frame_time: current_time,
     }
   }
 
@@ -94,12 +126,22 @@ impl GfxState {
       return Ok(());
     }
 
+    // update common buffer
+    let current_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+    let delta_time = (current_time - self.last_frame_time).as_secs_f32();
+    self.last_frame_time = current_time;
+    self.common_buffer_data.time += delta_time;
+    self.common_buffer_data.delta_time = delta_time;
+    self.common_buffer.update(&self.queue, &self.common_buffer_data);
+
+    // setup render target
     let output = self.surface.get_current_texture()?;
     let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
     let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
       label: Some("render encoder"),
     });
 
+    // render pass
     {
       let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
         label: Some("render pass"),
@@ -116,6 +158,8 @@ impl GfxState {
         timestamp_writes: None,
       });
 
+      render_pass.set_bind_group(self.common_buffer.binding, &self.common_buffer.bind_group, &[]);
+
       if self.pipeline.is_some() {
         let pipeline = self.pipeline.as_ref().unwrap();
         render_pass.set_pipeline(&pipeline.pipeline);
@@ -123,6 +167,7 @@ impl GfxState {
       }
     }
 
+    // submit
     self.queue.submit(std::iter::once(encoder.finish()));
     output.present();
 
@@ -144,6 +189,7 @@ impl GfxState {
       device: &self.device,
       config: &self.config,
       shader_source,
+      bind_group_layouts: &vec![&self.common_buffer.bind_group_layout],
     }));
   }
 
