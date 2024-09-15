@@ -1,10 +1,30 @@
 
 use wasm_bindgen::prelude::*;
+use winit::window::WindowId;
+
+
+#[derive(Debug, Clone, Copy)]
+#[wasm_bindgen]
+pub struct InstanceHandle {
+  #[wasm_bindgen(skip)]
+  pub window_id: WindowId,
+}
+
+#[wasm_bindgen]
+impl InstanceHandle {
+  #[wasm_bindgen(js_name = fromInstance)]
+  pub fn from_instance(instance: InstanceHandle) -> InstanceHandle {
+    InstanceHandle {
+      window_id: instance.window_id,
+    }
+  }
+}
 
 #[wasm_bindgen(typescript_custom_section)]
 const CustomTypes: &'static str = r#"
 interface IAppParams {
   containerId: string;
+  callback: (handle: InstanceHandle) => void;
 }
 
 interface ICompilationMessage {
@@ -18,6 +38,11 @@ interface ICompilationMessage {
   };
 }
 
+interface IUpdateShaderParams {
+  shaderSource: string;
+  callback: (info: ShaderCompilationInfo) => void;
+}
+
 type TShaderCompilationInfoIteractorCallback = (message: ICompilationMessage) => void;
 "#;
 
@@ -27,9 +52,12 @@ extern "C" {
   pub type IAppParams;
   #[wasm_bindgen(typescript_type = "TShaderCompilationInfoIteractorCallback")]
   pub type TShaderCompilationInfoIteractorCallback;
+  #[wasm_bindgen(typescript_type = "IUpdateShaderParams")]
+  pub type IUpdateShaderParams;
 }
 
 #[wasm_bindgen]
+#[derive(Debug, Default)]
 pub struct ShaderCompilationInfo {
   messages: Vec<wgpu::CompilationMessage>,
 }

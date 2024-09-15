@@ -31,6 +31,8 @@ pub struct GfxState {
   last_frame_time: Duration,
   common_buffer_data: CommonUniformBuffer,
   common_buffer: UniformBuffer,
+
+  pub initialized: bool,
 }
 
 impl GfxState {
@@ -118,11 +120,12 @@ impl GfxState {
       common_buffer,
       common_buffer_data,
       last_frame_time: current_time,
+      initialized: true,
     }
   }
 
   pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
-    if !self.surface_configured {
+    if !self.surface_configured || !self.initialized {
       return Ok(());
     }
 
@@ -203,5 +206,9 @@ impl GfxState {
     log::info!("{:?}", result);
 
     result
+  }
+
+  pub fn destory(&mut self) {
+    self.initialized = false;
   }
 }

@@ -4,5 +4,6 @@ mod gfx;
 
 fn main() {
   pollster::block_on(init());
-  pollster::block_on(app::App::new());
+
+  let _event_handler = app::EventHandler::new();
 }
